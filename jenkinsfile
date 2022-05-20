@@ -11,7 +11,7 @@ timestamps() {
         stage('Git Checkout') {
             git branch: "${branch}",
                 credentialsId: 'SpringBoot-GitHub',
-                url: 'git@github.com:alican-uzun/springboot'
+                url: 'git@github.com:dexter-cc/springboot'
         }
         stage("Docker Build") {
             sh "docker build -t alicanuzun/springboot ."
@@ -30,7 +30,7 @@ timestamps() {
         stage('Helm Chart Git Checkout'){
             git branch: "${branch}",
                 credentialsId: 'Helm-Charts-GitHub',
-                url: 'git@github.com:alican-uzun/helm-charts'
+                url: 'git@github.com:dexter-cc/helm-charts'
         }
         stage("Deploy on Minikube Cluster"){
             sh  "helm upgrade --install " +

@@ -1,0 +1,44 @@
+
+String branch = "master"
+String Registry = "alicanuzun/springboot"
+String currentContext = "minikube"
+String serviceName = "springboot"
+String environment = "default"
+String chartPath = "apps/springboot"
+
+timestamps() {
+    node(label: 'master') {
+        stage('Git Checkout') {
+            git branch: "${branch}",
+                credentialsId: 'SpringBoot-GitHub',
+                url: 'git@github.com:alican-uzun/springboot'
+        }
+        stage("Docker Build") {
+            sh "docker build -t alicanuzun/springboot ."
+        }
+        stage("Login to DockerHub"){
+            withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]){
+                sh('docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD')
+            }
+        }
+        stage("Push Image to DockerHub"){
+                sh """
+                    docker tag ${Registry}:latest ${Registry}:prod-${currentBuild.number}
+                    docker push ${Registry}:prod-${currentBuild.number}
+                """
+        }
+        stage('Helm Chart Git Checkout'){
+            git branch: "${branch}",
+                credentialsId: 'Helm-Charts-GitHub',
+                url: 'git@github.com:alican-uzun/helm-charts'
+        }
+        stage("Deploy on Minikube Cluster"){
+            sh  "helm upgrade --install " +
+                "${serviceName} ${chartPath} -f ${chartPath}/values.yaml -n ${environment} " + 
+                "--set image.tag=prod-${currentBuild.number} " +
+                "--set image.repository=${Registry} " +
+                "--namespace=${environment} "
+                "--kube-context=${currentContext}"
+        }
+    }
+}
